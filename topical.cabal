@@ -17,6 +17,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Topical.Text.Tokenizer
+                     , Topical.Text.Types
   build-depends:       base >=4.7 && <4.8
                      , text
                      , conduit

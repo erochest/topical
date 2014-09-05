@@ -6,10 +6,12 @@ module Topical.Text.Tokenizer
     ) where
 
 
-import           Data.Char (isSpace)
-import qualified Data.Text as T
+import           Data.Char          (isSpace)
+import qualified Data.Text          as T
+
+import           Topical.Text.Types
 
 
-splitTokenizer :: T.Text -> [T.Text]
+splitTokenizer :: Tokenizer
 splitTokenizer = T.split isSpace
 
