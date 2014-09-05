@@ -51,6 +51,8 @@ test-suite topical-specs
                        , QuickCheck
                        , smallcheck
                        , hspec
+                       , text
+                       , attoparsec
                        -- , tasty
                        -- , tasty-quickcheck
                        -- , tasty-smallcheck
