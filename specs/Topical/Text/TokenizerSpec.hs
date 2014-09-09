@@ -29,7 +29,7 @@ spec = describe "Topical.Text.Tokenizer" $ do
                 ["The", "red", "pony!", "It", "rides", "the", "Moors!"]
 
     describe "parserTokenizer" $ do
-        it "should return all instances of a given parser." $ do
+        it "should return all matches of a given parser." $ do
             let space' = T.singleton <$> space
                 rWords = T.cons <$> (space *> char 'r') <*> A.takeWhile (not . isSpace)
             parserTokenizer (string "the") "the red pony rides the moors" `shouldBe`
@@ -42,3 +42,37 @@ spec = describe "Topical.Text.Tokenizer" $ do
                 ["red", "rides"]
             parserTokenizer rWords "red pony rides the moors" `shouldBe`
                 ["rides"]
+
+    describe "sexprTokenizer" $ do
+        it "should break inputs on whitespace." $
+            sexprTokenizer "a b c d e" `shouldBe` ["a", "b", "c", "d", "e"]
+        it "should return parenthesized items as a group." $
+            sexprTokenizer "a (b c d) e" `shouldBe` ["a", "(b c d)", "e"]
+        it "should handle nested parentheses." $
+            sexprTokenizer "(a (b (c) d)) e" `shouldBe` ["(a (b (c) d))", "e"]
+        it "should return nothing if the parentheses aren't balanced." $ do
+            sexprTokenizer "(a (b (c d)) e" `shouldBe` []
+            sexprTokenizer "a (b (c d)) e)" `shouldBe` []
+        it "should handle the NLTK docstring examples." $
+            sexprTokenizer "(a b (c d)) e f (g)" `shouldBe` ["(a b (c d))", "e", "f", "(g)"]
+
+    describe "charTokenizer" $
+        it "should break a string into characters." $
+            charTokenizer "abcdefgh ijklm" `shouldBe`
+                ["a", "b", "c", "d", "e", "f", "g", "h", " ", "i", "j", "k", "l", "m"]
+
+    describe "lineTokenize" $
+        it "should break a string into lines." $
+            pending
+
+    describe "treebankTokenizer" $
+        it "should follow the Penn Treebank tokenization specs." $
+            pending
+
+    describe "textTilingTokenizer" $
+        it "should tokenize according to the TextTiling algorithm." $
+            pending
+
+    describe "punktTokenizer" $
+        it "should tokenize according to a trained Punkt algorithm." $
+            pending

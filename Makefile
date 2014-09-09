@@ -8,6 +8,9 @@ init:
 test: build
 	cabal test --test-option=--color
 
+specs: build
+	./dist/build/topical-specs/topical-specs
+
 run:
 	cabal run
 
