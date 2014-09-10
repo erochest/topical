@@ -6,6 +6,7 @@ module Topical.Text.Tokenizer
     , parserTokenizer
     , sexprTokenizer
     , charTokenizer
+    , lineTokenizer
     ) where
 
 
@@ -30,6 +31,9 @@ sexprTokenizer = parseTokens sexpr
 
 charTokenizer :: Tokenizer
 charTokenizer = map T.singleton . T.unpack
+
+lineTokenizer :: Tokenizer
+lineTokenizer = T.lines
 
 parseTokens :: Parser [T.Text] -> Tokenizer
 parseTokens p = either (const []) id . parseOnly (p <* endOfInput)

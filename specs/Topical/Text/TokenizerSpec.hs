@@ -63,7 +63,8 @@ spec = describe "Topical.Text.Tokenizer" $ do
 
     describe "lineTokenize" $
         it "should break a string into lines." $
-            pending
+            lineTokenizer "abc\ndef\nhijk lm\n" `shouldBe`
+                ["abc", "def", "hijk lm"]
 
     describe "treebankTokenizer" $
         it "should follow the Penn Treebank tokenization specs." $
