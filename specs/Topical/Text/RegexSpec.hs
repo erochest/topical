@@ -15,27 +15,32 @@ import           Test.Hspec
 import           Topical.Text.Regex
 
 
-findReplace :: Regex -> Replace -> T.Text -> T.Text
-findReplace re repl t = fromMaybe t (return . replace repl =<< find re t)
-
 spec :: Spec
 spec = describe "Topical.Text.Regex" $ do
-    let the  = "the"
-        them = "the(m)"
-    describe "replace" $
-        it "should replace one instance of a regular expression in a string." $
-            findReplace the "a" "the boy and the girl" `shouldBe`
-                "a boy and the girl"
+    let the   = "the"
+        them  = "the(m)"
+        xyzzy = "xyzzy"
 
-    describe "replaceAll" $
+    describe "replace" $ do
+        it "should replace one instance of a regular expression in a string." $
+            replace the "a" "the boy and the girl" `shouldBe`
+                "a boy and the girl"
+        it "should return the original string if there were no matches." $
+            replace xyzzy "!!!" "the boy and the girl" `shouldBe`
+                "the boy and the girl"
+
+    describe "replaceAll" $ do
         it "should replace all instances of a regular expression in a string." $
-            replaceAll "a" (findAll the "the boy and the girl") `shouldBe`
+            replaceAll the "a" "the boy and the girl" `shouldBe`
                 "a boy and a girl"
+        it "should return the original string if there were no matches." $
+            replaceAll xyzzy "!!!" "the boy and the girl" `shouldBe`
+                "the boy and the girl"
 
     describe "rgroup" $ do
         it "should pull out a captured group." $
-            findReplace them (rgroup 1) "them boys and those girls" `shouldBe`
+            replace them (rgroup 1) "them boys and those girls" `shouldBe`
                 "m boys and those girls"
         it "should combine with other replacements." $
-            findReplace them ("<" <> rgroup 1 <> ">") "them boys and those girls" `shouldBe`
+            replace them ("<" <> rgroup 1 <> ">") "them boys and those girls" `shouldBe`
                 "<m> boys and those girls"

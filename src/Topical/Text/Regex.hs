@@ -3,19 +3,23 @@
 
 
 module Topical.Text.Regex
-    ( Replace(..)
-    , replace
-    , replaceAll
+    ( Replace
     , rgroup
     , rtext
     , rfn
     , rtfn
     , rbuilder
+
+    , replace
+    , replace'
+    , replaceAll
+    , replaceAll'
     ) where
 
 
 import           Control.Arrow
 import           Data.Foldable
+import           Data.Maybe
 import           Data.Monoid
 import           Data.String
 import qualified Data.Text              as T
@@ -31,11 +35,19 @@ newtype Replace = Replace { unReplace :: Match -> TB.Builder }
 instance IsString Replace where
     fromString = Replace . const . TB.fromString
 
-replace :: Replace -> Match -> T.Text
-replace r m = finish (Last (Just m)) $ unReplace r m
+replace :: Regex -> Replace -> T.Text -> T.Text
+replace re r t = maybe t (replace' r) $ ICU.find re t
 
-replaceAll :: Replace -> [Match] -> T.Text
-replaceAll r ms = uncurry finish $ foldMap (Last . Just &&& build r) ms
+replace' :: Replace -> Match -> T.Text
+replace' r m = finish (Last (Just m)) $ unReplace r m
+
+replaceAll :: Regex -> Replace -> T.Text -> T.Text
+replaceAll re r t = case ICU.findAll re t of
+                        [] -> t
+                        ms -> replaceAll' r ms
+
+replaceAll' :: Replace -> [Match] -> T.Text
+replaceAll' r ms = uncurry finish $ foldMap (Last . Just &&& build r) ms
     where
         build :: Replace -> Match -> TB.Builder
         build repl m = TB.fromText (ICU.span m) <> unReplace repl m
