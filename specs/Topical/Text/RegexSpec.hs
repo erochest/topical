@@ -44,3 +44,26 @@ spec = describe "Topical.Text.Regex" $ do
         it "should combine with other replacements." $
             replace them ("<" <> rgroup 1 <> ">") "them boys and those girls" `shouldBe`
                 "<m> boys and those girls"
+
+    describe "parseReplace" $ do
+        it "should handle raw strings." $
+            replace them (parseReplace "those") "them boys and those girls" `shouldBe`
+                "those boys and those girls"
+        it "should handle $N groups." $
+            replace them (parseReplace "$1") "them boys and those girls" `shouldBe`
+                "m boys and those girls"
+        it "should handle ${N} groups." $
+            replace them (parseReplace "${1}") "them boys and those girls" `shouldBe`
+                "m boys and those girls"
+        it "should handle interpolating $N groups and raw strings." $
+            replace them (parseReplace "l $1 n") "them boys and those girls" `shouldBe`
+                "l m n boys and those girls"
+        it "should handle interpolating ${N} groups and raw strings." $
+            replace them (parseReplace "0${1}2") "them boys and those girls" `shouldBe`
+                "0m2 boys and those girls"
+        it "should interpolate the whole match for $0." $
+            replace them (parseReplace "<$0>") "them boys and those girls" `shouldBe`
+                "<them> boys and those girls"
+        it "should interpolate an empty string for $N, where N > the number of groups." $
+            replace them (parseReplace "<$10>") "them boys and those girls" `shouldBe`
+                "<> boys and those girls"

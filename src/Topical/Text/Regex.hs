@@ -6,6 +6,7 @@ module Topical.Text.Regex
     ( Replace
     , rgroup
     , rtext
+    , rstring
     , rfn
     , rtfn
     , rbuilder
@@ -14,12 +15,15 @@ module Topical.Text.Regex
     , replace'
     , replaceAll
     , replaceAll'
+
+    , parseReplace
     ) where
 
 
+import           Control.Applicative
 import           Control.Arrow
+import           Data.Attoparsec.Text
 import           Data.Foldable
-import           Data.Maybe
 import           Data.Monoid
 import           Data.String
 import qualified Data.Text              as T
@@ -33,7 +37,7 @@ newtype Replace = Replace { unReplace :: Match -> TB.Builder }
                   deriving (Monoid)
 
 instance IsString Replace where
-    fromString = Replace . const . TB.fromString
+    fromString = parseReplace . T.pack
 
 replace :: Regex -> Replace -> T.Text -> T.Text
 replace re r t = maybe t (replace' r) $ ICU.find re t
@@ -63,6 +67,9 @@ rgroup g = Replace $ fold . fmap TB.fromText . group g
 rtext :: T.Text -> Replace
 rtext = rbuilder . TB.fromText
 
+rstring :: String -> Replace
+rstring = rbuilder . TB.fromString
+
 rfn :: (Match -> TB.Builder) -> Replace
 rfn = Replace
 
@@ -71,3 +78,19 @@ rtfn = Replace . (TB.fromText .)
 
 rbuilder :: TB.Builder -> Replace
 rbuilder = Replace . const
+
+parseReplace :: T.Text -> Replace
+parseReplace t = either (const $ rtext t) id
+               $ parseOnly (replacement <* endOfInput) t
+
+replacement :: Parser Replace
+replacement = mconcat <$> many (dollarGroup <|> raw)
+
+dollarGroup :: Parser Replace
+dollarGroup = char '$' *> (grp <|> escaped)
+    where curly   = char '{' *> decimal <* char '}'
+          grp     = rgroup <$> (decimal <|> curly)
+          escaped = rtext . T.singleton <$> char '$'
+
+raw :: Parser Replace
+raw = rtext <$> takeWhile1 (not . (== '$'))
