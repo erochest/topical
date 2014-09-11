@@ -18,8 +18,10 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Topical.Text.Tokenizer
                      , Topical.Text.Types
+                     , Topical.Text.Regex
   build-depends:       base >=4.7 && <4.8
                      , text
+                     , text-icu
                      , conduit
                      , lens
                      , attoparsec
@@ -52,6 +54,7 @@ test-suite topical-specs
                        , smallcheck
                        , hspec
                        , text
+                       , text-icu
                        , attoparsec
                        -- , tasty
                        -- , tasty-quickcheck
