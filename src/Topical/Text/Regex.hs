@@ -93,4 +93,4 @@ dollarGroup = char '$' *> (grp <|> escaped)
           escaped = rtext . T.singleton <$> char '$'
 
 raw :: Parser Replace
-raw = rtext <$> takeWhile1 (not . (== '$'))
+raw = rtext <$> takeWhile1 (/= '$')

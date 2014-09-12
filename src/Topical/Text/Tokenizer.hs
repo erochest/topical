@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 
 module Topical.Text.Tokenizer
@@ -7,6 +8,7 @@ module Topical.Text.Tokenizer
     , sexprTokenizer
     , charTokenizer
     , lineTokenizer
+    , treebankTokenizer
     ) where
 
 
@@ -14,9 +16,12 @@ import           Control.Applicative
 import           Data.Attoparsec.Text
 import qualified Data.Attoparsec.Text as A
 import           Data.Char            (isSpace)
+import qualified Data.List            as L
 import           Data.Monoid
 import qualified Data.Text            as T
+import           Data.Text.ICU
 
+import           Topical.Text.Regex
 import           Topical.Text.Types
 
 
@@ -34,6 +39,50 @@ charTokenizer = map T.singleton . T.unpack
 
 lineTokenizer :: Tokenizer
 lineTokenizer = T.lines
+
+treebankTokenizer :: Tokenizer
+treebankTokenizer = T.words
+                  . foldRepl' (stage2 ++ contractions)
+                  . flip (j ' ') ' '
+                  . foldRepl' stage1
+    where reOpts   = [CaseInsensitive]
+          fmap1 f (l, r) = (f l, r)
+          rall t (re, r) = replaceAll re r t
+          foldRepl t res = L.foldl' rall t $ map (fmap1 (regex reOpts)) res
+          foldRepl'      = flip foldRepl
+          stage1         = [ ("^\"", "``")                  -- starting quotes
+                           , ("(``)", " $1 ")
+                           , ("([ (\\[{])\"", "$1 `` ")
+                           , ("([:,])([^\\d])", " $1 $2 ")  -- punctuation
+                           , ("\\.\\.\\.", " ... ")
+                           , ("[;@#$%&]", " $0 ")
+                           , ("([^\\.])(\\.)([\\]\\)}>\"']*)\\s*$", "$1 $2$3")
+                           , ("[?!]", " $0 ")
+                           , ("([^'])' ", "$1 ' ")
+                           , ("[\\]\\[\\(\\)\\{\\}\\<\\>]", " $0 ")     -- brackets
+                           , ("--", " -- ")
+                           ]
+          stage2         = [ ("\"", " '' ")
+                           , ("(\\S)('')", "$1 $2 ")
+                           , ("([^' ])('[sS]|'[mM]|'[dD]|') ", "$1 $2 ")
+                           , ("([^' ])('ll|'LL|'re|'RE|'ve|'VE|n't|N'T) ", "$1 $2 ")
+                           ]
+          contractions   = map (, " $1 $2 ") [ "\\b(can)(not)\\b"
+                                             , "\\b(d)('ye)\\b"
+                                             , "\\b(gim)(me)\\b"
+                                             , "\\b(gon)(na)\\b"
+                                             , "\\b(got)(ta)\\b"
+                                             , "\\b(lem)(me)\\b"
+                                             , "\\b(mor)('n)\\b"
+                                             , "\\b(wan)(na)\\b"
+                                             , " ('t)(is)\\b"
+                                             , " ('t)(wa)\\b"
+                                             , "\\b(whad)(dd)(ya)\\b"
+                                             , "\\b(wha)(t)(cha)\\b"
+                                             ]
+          contractions4  = [ "\\b(whad)(dd)(ya)\\b"
+                           , "\\b(wha)(t)(cha)\\b"
+                           ]
 
 parseTokens :: Parser [T.Text] -> Tokenizer
 parseTokens p = either (const []) id . parseOnly (p <* endOfInput)
