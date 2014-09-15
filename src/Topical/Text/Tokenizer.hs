@@ -16,6 +16,7 @@ import           Control.Applicative
 import           Data.Attoparsec.Text
 import qualified Data.Attoparsec.Text as A
 import           Data.Char            (isSpace)
+import           Data.Foldable        (fold)
 import qualified Data.List            as L
 import           Data.Monoid
 import qualified Data.Text            as T
@@ -45,7 +46,7 @@ treebankTokenizer = T.words
                   . foldRepl' (stage2 ++ contractions)
                   . flip (j ' ') ' '
                   . foldRepl' stage1
-    where reOpts   = [CaseInsensitive]
+    where reOpts         = [CaseInsensitive]
           fmap1 f (l, r) = (f l, r)
           rall t (re, r) = replaceAll re r t
           foldRepl t res = L.foldl' rall t $ map (fmap1 (regex reOpts)) res
@@ -79,13 +80,13 @@ treebankTokenizer = T.words
                                              , " ('t)(wa)\\b"
                                              , "\\b(whad)(dd)(ya)\\b"
                                              , "\\b(wha)(t)(cha)\\b"
+                                             -- Commented out in the original:
+                                             -- , "\\b(whad)(dd)(ya)\\b"
+                                             -- , "\\b(wha)(t)(cha)\\b"
                                              ]
-          contractions4  = [ "\\b(whad)(dd)(ya)\\b"
-                           , "\\b(wha)(t)(cha)\\b"
-                           ]
 
 parseTokens :: Parser [T.Text] -> Tokenizer
-parseTokens p = either (const []) id . parseOnly (p <* endOfInput)
+parseTokens p = fold . parseOnly (p <* endOfInput)
 
 alt :: Parser a -> Parser b -> Parser a
 alt p s = p <|> (s *> alt p s)
