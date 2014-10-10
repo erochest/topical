@@ -9,6 +9,7 @@ module Topical.Text.Tokenizer
     , charTokenizer
     , lineTokenizer
     , treebankTokenizer
+    , textTilingTokenizer
     ) where
 
 
@@ -24,6 +25,7 @@ import           Data.Text.ICU
 
 import           Topical.Text.Regex
 import           Topical.Text.Types
+import           Topical.Text.Tokenizer.TextTiling
 
 
 splitTokenizer :: Tokenizer

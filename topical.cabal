@@ -17,6 +17,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Topical.Text.Tokenizer
+                     , Topical.Text.Tokenizer.TextTiling
                      , Topical.Text.Types
                      , Topical.Text.Regex
   build-depends:       base >=4.7 && <4.8
@@ -31,6 +32,13 @@ library
                      , repa
                      , mwc-random
                      , statistics
+                     , data-default
+                     , unordered-containers
+                     , hashable
+                     , statistics
+                     , vector
+                     , bifunctors
+                     , errors
   hs-source-dirs:      ./src
   default-language:    Haskell2010
 
@@ -40,6 +48,9 @@ executable topical
   -- other-extensions:    
   build-depends:       base >=4.7 && <4.8
                      , topical
+                     , text
+                     , attoparsec
+                     , unordered-containers
   -- hs-source-dirs:      
   default-language:    Haskell2010
 
@@ -56,6 +67,7 @@ test-suite topical-specs
                        , text
                        , text-icu
                        , attoparsec
+                       , unordered-containers
                        -- , tasty
                        -- , tasty-quickcheck
                        -- , tasty-smallcheck
