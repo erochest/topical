@@ -10,7 +10,7 @@ import           Control.Monad
 import           Data.Attoparsec.Text
 import           Data.Char
 import qualified Data.HashSet                      as S
-import           Data.Monoid
+import qualified Data.List                         as L
 import qualified Data.Text                         as T
 import qualified Data.Text.IO                      as TIO
 import           System.Environment
@@ -29,19 +29,37 @@ main = do
         putStrLn filename
 
         tokens <- filter (not . (`S.member` stoplist)) . tokenize <$> TIO.readFile filename
-        let tiles = uncurry zip $ textTilingTokenizer 20 6 undefined blockComparison tokens
+        putStrLn $ "Token count = " ++ show (length tokens)
 
-        forM_ tiles $ \((_, s1), (Sequence{..}, s2)) -> do
-            let (start, end) = _seqSpan
-            TIO.putStrLn $ T.intercalate "," [ tshow _seqNo
-                                             , tshow start
-                                             , tshow end
-                                             , tshow s1
-                                             , tshow s2
-                                             , T.unwords _seqItems
-                                             ]
+{-
+ -         let tiles = textTilingTokenizer 20 6 3 blockComparison tokens
+ -         putStrLn $ "Tile count  = " ++ show (length tiles)
+ -
+ -         forM_ tiles $ \(Sequence{..}, (raw, score)) ->
+ -             putStrLn $ L.intercalate "," [ show _seqNo
+ -                                          , show (fst _seqSpan)
+ -                                          , show (snd _seqSpan)
+ -                                          , show raw
+ -                                          , show score
+ -                                          , unwords (map T.unpack _seqItems)
+ -                                          ]
+ -}
 
-        putStrLn ""
+{-
+ - toParagraphs :: Int
+ -              -> Tree (SeqScore T.Text (Double, Double))
+ -              -> [[SeqScore T.Text (Double, Double)]]
+ - toParagraphs 0 tree = [L.sortBy (comparing (_seqNo . fst)) $ flatten tree]
+ - toParagraphs n (Node root forest) = [sortp pre, root : sortp post]
+ -     where
+ -         rootNo      = root ^. _1 . seqNo
+ -         (pre, post) = L.break ((< rootNo) . _seqNo . fst . head . head)
+ -                     $ map (toParagraphs (n - 1)) forest
+ -         sortp       = L.sortBy (comparing (_seqNo . fst . _))
+ -}
+
+showp :: [SeqScore T.Text (Double, Double)] -> String
+showp = L.intercalate ". " . map (unwords . map T.unpack . _seqItems . fst)
 
 tshow :: Show a => a -> T.Text
 tshow = T.pack . show

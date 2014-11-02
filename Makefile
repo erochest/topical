@@ -1,4 +1,6 @@
 
+FLAGS=--enable-tests
+
 all: init test docs package
 
 init:
@@ -11,8 +13,8 @@ test: build
 specs: build
 	./dist/build/topical-specs/topical-specs
 
-run:
-	cabal run -- stoplists/en.txt creativity.txt > tiles.csv && open tiles.csv
+run: build
+	cabal run -- stoplists/en.txt creativity.txt
 
 # docs:
 # generate api documentation
@@ -36,11 +38,11 @@ distclean: clean
 	cabal sandbox delete
 
 configure: clean
-	cabal configure --enable-tests
+	cabal configure ${FLAGS}
 
 deps: clean
-	cabal install --only-dependencies --allow-newer --enable-tests
-	cabal configure --enable-tests
+	cabal install --only-dependencies --allow-newer ${FLAGS}
+	make configure
 
 build:
 	cabal build

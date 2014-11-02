@@ -1,18 +1,31 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TupleSections     #-}
 
 
 module Topical.Text.Tokenizer.TextTiling
     ( textTilingTokenizer
+    , suppressSmallBlocks
+    , smooth
+
     , windows
     , partition
     , triples
     , frequencies
     , blockComparison
     , vocabularyIntroduction
+
     , Sequence(..)
+    , seqNo
+    , seqSpan
+    , seqItems
+    , seqFreqs
+
+    , SeqScore
     ) where
 
 
@@ -20,16 +33,17 @@ import           Control.Applicative
 import           Control.Arrow
 import           Control.Error
 import           Control.Lens
-import           Data.Foldable       hiding (concat)
+import           Data.Foldable        hiding (concat)
 import           Data.Hashable
-import qualified Data.HashMap.Strict as M
-import qualified Data.HashSet        as S
-import qualified Data.List           as L
-import           Data.Maybe
+import qualified Data.HashMap.Strict  as M
+import qualified Data.HashSet         as S
+import qualified Data.List            as L
+import           Data.List.Split.Lens
 import           Data.Monoid
-import qualified Data.Text           as T
+import           Data.Ord
+import qualified Data.Text            as T
 import           Data.Traversable
-import qualified Data.Vector         as V
+import qualified Data.Vector          as V
 import           Statistics.Sample
 
 import           Topical.Text.Types
@@ -58,19 +72,27 @@ data Sequence a b = Sequence
                   , _seqSpan  :: !SeqSpan
                   , _seqItems :: ![a]
                   , _seqFreqs :: !(FrequencyTable b)
-                  } deriving (Show, Eq)
+                  } deriving (Eq)
 makeLenses ''Sequence
+
+instance Show (Sequence T.Text b) where
+    show Sequence{..} =
+        mconcat [ "Sequence #"
+                , show _seqNo
+                , ": "
+                , T.unpack (T.unwords _seqItems)
+                ]
 
 type TokenSequence a = Sequence a a
 type BlockSequence a = Sequence (TokenSequence a) a
 
-type SeqScore a = (TokenSequence a, Double)
+type SeqScore a b = (TokenSequence a, b)
 
 data SmoothingParams  = Smoothing Int    -- ^ Number of rounds of smoothing
                                   Int    -- ^ Smoothing window size
 
 type ScoringFunction a =
-    TokenSeqSize -> BlockSize -> [TokenSequence a] -> [SeqScore a]
+    TokenSeqSize -> BlockSize -> [TokenSequence a] -> [SeqScore a Double]
 type CountFunction a b = (Hashable b, Eq b) => [a] -> FrequencyTable b
 
 type TokenSeqSize = Int
@@ -78,7 +100,7 @@ type BlockSize    = Int
 
 -- | The basic processing flow:
 -- boundary identification . lexical score determination . tokenization
-textTilingTokenizer :: (Hashable a, Eq a)
+textTilingTokenizer :: (Hashable a, Eq a, Show a)
                     => TokenSeqSize
                     -- ^ The token windowSeq size parameter (/w/). 20 is often
                     -- a good default value.
@@ -86,9 +108,6 @@ textTilingTokenizer :: (Hashable a, Eq a)
                     -- ^ The number of token sequences to group together.
                     -- This is the average paragraph length (in token
                     -- sequences) (/blocksize/). 6 often works well.
-                    -> Int
-                    -- ^ The minimum number of token sequences between
-                    -- boundaries.
                     -> ScoringFunction a
                     -- ^ This either uses block comparison to look at
                     -- shared vocabulary or vocabulary introduction to base
@@ -101,23 +120,90 @@ textTilingTokenizer :: (Hashable a, Eq a)
                     -- out. Also, affixes and irregular forms normalized
                     -- should be removed so that it's only the
                     -- morphological base.
-                    -> ([SeqScore a], [SeqScore a])
-                    -- -> [[a]]
-textTilingTokenizer w k _minP scoring =
-      -- _rest
-      (id &&& snd . mapAccumConcat boundary (0, 0, []))
+                    -> [SeqScore a (Double, Double)]
+textTilingTokenizer w k scoring =
+      snd
+    . mapAccumConcat boundary (0, 0, [])
     . scoring w k
     . partitionSeq w frequencies
 
-type BoundaryId a = (Double, Double, [Double -> SeqScore a])
+-- The first Double is the raw score. The second is the depth score
+-- actually used to make the boundary determination.
+type SeqNode a = SeqScore a (Double, Double)
 
-boundary :: BoundaryId a -> SeqScore a -> (BoundaryId a, [SeqScore a])
+-- | This takes a list of @SeqScore a (Double, Double)@, sorted by
+-- likelihood of beginning a new section, and returns a tree of descending
+-- likelihoods, but in sequence order.
+hangTree :: Show a => [SeqNode a] -> Tree (SeqNode a)
+hangTree = unfoldTree hang
+    where
+        hang :: Show a => [SeqNode a] -> (SeqNode a, (Maybe [SeqNode a], Maybe [SeqNode a]))
+        hang = undefined
+             . maximumBy (comparing (snd . snd . fst))
+             . snd
+             . L.mapAccumL packageNode []
+             . filter (not . L.null)
+             . L.tails
+
+        packageNode :: Show a => [SeqNode a] -> [SeqNode a] -> ([SeqNode a], (SeqNode a, [[SeqNode a]]))
+        packageNode ls (s:rs) = (s:ls, (s, [reverse ls, rs]))
+        packageNode ls []     = (ls,   (undefined, []))
+        -- It should never reach here, so I'll just plant a bomb.
+        -- KA-BOOM!
+
+smooth :: Int -> Int -> [SeqScore a (Double, Double)]
+       -> [SeqScore a (Double, Double)]
+smooth _      0     sss = sss
+smooth window iters sss =
+    smooth window (pred iters) $ moveAvgBy window (_2 . _2) sss
+
+moveAvgBy :: Int       -- ^ The number of items to offset from each side
+                       -- of the center. For instance, for a window of 3,
+                       -- use a value of 1.
+          -> Lens' a Double -> [a] -> [a]
+moveAvgBy n l xs = zipWith (set l) (moveavg n $ map (^. l) xs) xs
+
+moveavg :: Int         -- ^ The number of items to offset from each side
+                       -- of the center. For instance, for a window of 3,
+                       -- use a value of 1.
+        -> [Double] -> [Double]
+moveavg n = go []
+    where
+        go _    []     = []
+        go pref (x:xs) = avg (x : take n pref ++ take n xs) : go (x:pref) xs
+
+avg :: [Double] -> Double
+avg = uncurry (/) . L.foldl' accum (0, 0)
+    where
+        accum p x = ((+ x) *** succ) p
+
+suppressSmallBlocks :: Int
+                    -> [SeqScore a (Double, Double)]
+                    -> [SeqScore a (Double, Double)]
+suppressSmallBlocks minP = sortNo . removeTiny minP . sortScore
+    where
+        removeTiny _ []     = []
+        removeTiny w (x:xs) = x : sortScore (map (modifyClose w $ x ^. _1 . seqNo) xs)
+        closeTo w seq1No seq2 = abs (seq1No - (seq2 ^. _1 . seqNo)) <= w
+        modifyClose w seq1No seq2 = if closeTo w seq1No seq2
+                                        then seq2 & _2 . _2 .~ 0
+                                        else seq2
+
+sortScore :: [SeqScore a (Double, Double)] -> [SeqScore a (Double, Double)]
+sortScore = L.sortBy (comparing (Down . snd . snd))
+
+sortNo :: [SeqScore a b] -> [SeqScore a b]
+sortNo = L.sortBy (comparing (_seqNo . fst))
+
+type BoundaryId a = (Double, Double, [Double -> SeqScore a (Double, Double)])
+
+boundary :: BoundaryId a -> SeqScore a Double -> (BoundaryId a, [SeqScore a (Double, Double)])
 boundary (leftS, lastS, pending) (ts, s)
     | lastS <= s = ((leftS', s, nextf:pending), [])
-    | otherwise  = ((s, s, []), reverse (map ($ lastS) pending))
+    | otherwise  = ((s, s, []), reverse (map ($ lastS) (nextf:pending)))
     where
         leftS'  = max leftS s
-        nextf r = (ts, (leftS' - s) + (r - s))
+        nextf r = (ts, (s, (leftS' - s) + (r - s)))
 
 -- | This converts a two-item list into a tuple pair.
 toPair :: [a] -> Maybe (a, a)
@@ -143,15 +229,21 @@ mapAccumContext f s xs = go s [] xs
 
 -- | The block comparison scoring function. This looks at words in common
 -- between two windows.
--- TODO: I think we're loosing `bsize` token seqeuences off the front.
+-- TODO: I think we're loosing `bsize` token sequences off the front.
 blockComparison :: (Hashable a, Eq a) => ScoringFunction a
-blockComparison _ bsize = map (uncurry blockCompare)
-                        . mapMaybe toPair
-                        . windows 2
-                        . windowSeq bsize mergeFrequencies
+blockComparison _ _ []      = []
+blockComparison _ bsize tss =
+      uncurry appHead
+    . (floatHead &&& comparePairs)
+    $ windowSeq bsize mergeFrequencies tss
+    where
+        floatHead seqs = (,0.0) <$> seqs ^? i0 . seqItems . i0
+        comparePairs   = map (uncurry blockCompare) . mapMaybe toPair . windows 2
+        appHead mh xs  = maybe xs (:xs) mh
+        i0             = traversed . index 0
 
 blockCompare :: (Hashable a, Eq a)
-             => BlockSequence a -> BlockSequence a -> SeqScore a
+             => BlockSequence a -> BlockSequence a -> SeqScore a Double
 blockCompare (Sequence _ _ _ b1) (Sequence _ _ (ts:_) b2) =
     (ts,) . final . foldMap step $ terms b1 `S.union` terms b2
     where
@@ -223,8 +315,7 @@ toSeq breaker counter =
 windows :: Int      -- ^ The size of the sliding window.
         -> [a]      -- ^ The input sequence.
         -> [[a]]    -- ^ The output windowSeq of windows.
-windows _ []        = []
-windows k xs@(_:ys) = L.take k xs : windows k ys
+windows k = filter (not . L.null) . map (take k) . L.tails
 
 -- | This takes an input windowSeq and divides it into non-overlapping
 -- partitions of a given size.
@@ -234,8 +325,7 @@ windows k xs@(_:ys) = L.take k xs : windows k ys
 partition :: Int    -- ^ The size of the non-overlapping partitions.
           -> [a]    -- ^ The input windowSeq to partition.
           -> [[a]]  -- ^ The non-overlapping partitions.
-partition _ [] = []
-partition k xs = uncurry (:) . fmap (partition k) $ L.splitAt k xs
+partition k xs = xs ^.. chunking k each
 
 -- | This takes an input windowSeq and divides it into overlapping chains of
 -- three.
