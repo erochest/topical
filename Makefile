@@ -14,7 +14,7 @@ specs: build
 	./dist/build/topical-specs/topical-specs
 
 run: build
-	cabal run -- stoplists/en.txt creativity.txt
+	cabal run -- stoplists/en.txt creativity.txt > tiles.csv
 
 # docs:
 # generate api documentation

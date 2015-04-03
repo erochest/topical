@@ -20,7 +20,7 @@ library
                      , Topical.Text.Tokenizer.TextTiling
                      , Topical.Text.Types
                      , Topical.Text.Regex
-  build-depends:       base >=4.7 && <4.8
+  build-depends:       base >=4.7 && <5
                      , text
                      , text-icu
                      , conduit
@@ -39,6 +39,7 @@ library
                      , vector
                      , bifunctors
                      , errors
+                     , split
   hs-source-dirs:      ./src
   default-language:    Haskell2010
 
@@ -46,12 +47,14 @@ executable topical
   main-is:             Topical.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.7 && <4.8
+  build-depends:       base >=4.7 && <5
                      , topical
                      , text
                      , attoparsec
                      , unordered-containers
                      , lens
+                     , Chart
+                     , Chart-cairo
   -- hs-source-dirs:      
   default-language:    Haskell2010
 
@@ -60,7 +63,7 @@ test-suite topical-specs
   ghc-options:         -threaded -rtsopts
   hs-source-dirs:      specs
   main-is:             Specs.hs
-  build-depends:         base       == 4.7.*
+  build-depends:         base
                        , topical
                        , QuickCheck
                        , smallcheck

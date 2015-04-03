@@ -8,7 +8,9 @@
 
 
 module Topical.Text.Tokenizer.TextTiling
-    ( textTilingTokenizer
+    ( SmoothingParams(..)
+
+    , textTilingTokenizer
     , suppressSmallBlocks
     , smooth
 
@@ -33,17 +35,17 @@ import           Control.Applicative
 import           Control.Arrow
 import           Control.Error
 import           Control.Lens
-import           Data.Foldable        hiding (concat)
+import           Data.Foldable       hiding (concat)
 import           Data.Hashable
-import qualified Data.HashMap.Strict  as M
-import qualified Data.HashSet         as S
-import qualified Data.List            as L
-import           Data.List.Split.Lens
+import qualified Data.HashMap.Strict as M
+import qualified Data.HashSet        as S
+import qualified Data.List           as L
+import qualified Data.List.Split     as Split
 import           Data.Monoid
 import           Data.Ord
-import qualified Data.Text            as T
+import qualified Data.Text           as T
 import           Data.Traversable
-import qualified Data.Vector          as V
+import qualified Data.Vector         as V
 import           Statistics.Sample
 
 import           Topical.Text.Types
@@ -114,18 +116,24 @@ textTilingTokenizer :: (Hashable a, Eq a, Show a)
                     -- it on the number of new words are found in the
                     -- second window. Either way, larger output values
                     -- should indicate a more likely change of topic.
+                    -> SmoothingParams
                     -> [a]
                     -- ^ The input sequence. If this is text, this should
                     -- be tokenized, case-folded, and stop-words filtered
                     -- out. Also, affixes and irregular forms normalized
                     -- should be removed so that it's only the
                     -- morphological base.
-                    -> [SeqScore a (Double, Double)]
-textTilingTokenizer w k scoring =
-      snd
+                    -> [BlockSequence a]
+textTilingTokenizer w k scoring (Smoothing sWin sIters) =
+      cutOffs
+    . smooth sWin sIters
+    . snd
     . mapAccumConcat boundary (0, 0, [])
     . scoring w k
     . partitionSeq w frequencies
+
+cutOffs :: [SeqScore a (Double, Double)] -> [BlockSequence a]
+cutOffs = undefined
 
 -- The first Double is the raw score. The second is the depth score
 -- actually used to make the boundary determination.
@@ -182,9 +190,12 @@ suppressSmallBlocks :: Int
                     -> [SeqScore a (Double, Double)]
 suppressSmallBlocks minP = sortNo . removeTiny minP . sortScore
     where
+        removeTiny :: Int -> [SeqScore a0 (Double, Double)] -> [SeqScore a0 (Double, Double)]
         removeTiny _ []     = []
         removeTiny w (x:xs) = x : sortScore (map (modifyClose w $ x ^. _1 . seqNo) xs)
+        closeTo :: Int -> Int -> SeqScore a1 (Double, Double) -> Bool
         closeTo w seq1No seq2 = abs (seq1No - (seq2 ^. _1 . seqNo)) <= w
+        modifyClose :: Int -> Int -> SeqScore a2 (Double, Double) -> SeqScore a2 (Double, Double)
         modifyClose w seq1No seq2 = if closeTo w seq1No seq2
                                         then seq2 & _2 . _2 .~ 0
                                         else seq2
@@ -316,6 +327,13 @@ windows :: Int      -- ^ The size of the sliding window.
         -> [a]      -- ^ The input sequence.
         -> [[a]]    -- ^ The output windowSeq of windows.
 windows k = filter (not . L.null) . map (take k) . L.tails
+
+-- | This implementation is taken from Data.List.Split.Lens, before it was
+-- removed.
+chunking :: Int -- ^@n@
+         -> Getting (Endo [a]) s a -> Fold s [a]
+chunking s l f = coerce . traverse f . Split.chunksOf s . toListOf l
+{-# INLINE chunking #-}
 
 -- | This takes an input windowSeq and divides it into non-overlapping
 -- partitions of a given size.
