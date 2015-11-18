@@ -64,7 +64,7 @@ tags: ${SRC}
 	codex update
 
 argon:
-        find src -name \*.hs | xargs argon
+	find src -name \*.hs | xargs argon
 
 hlint:
 	hlint *.hs src specs
