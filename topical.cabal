@@ -21,26 +21,26 @@ library
                      , Topical.Text.Types
                      , Topical.Text.Regex
   build-depends:       base >=4.7 && <5
+                     , attoparsec
+                     , bifunctors
+                     , conduit
+                     , data-default
+                     , errors
+                     , hashable
+                     , lens
+                     , linear
+                     , mwc-random
+                     , repa
+                     , split
+                     , statistics
+                     , statistics
                      , taygeta
                      , text
                      , text-icu
-                     , conduit
-                     , lens
-                     , attoparsec
+                     , unordered-containers
+                     , vector
                      , vector
                      , vector-algorithms
-                     , linear
-                     , repa
-                     , mwc-random
-                     , statistics
-                     , data-default
-                     , unordered-containers
-                     , hashable
-                     , statistics
-                     , vector
-                     , bifunctors
-                     , errors
-                     , split
   hs-source-dirs:      ./src
   default-language:    Haskell2010
 
@@ -50,12 +50,12 @@ executable topical
   -- other-extensions:    
   build-depends:       base >=4.7 && <5
                      , topical
-                     , text
-                     , attoparsec
-                     , unordered-containers
-                     , lens
                      , Chart
                      , Chart-cairo
+                     , attoparsec
+                     , lens
+                     , text
+                     , unordered-containers
   hs-source-dirs:      ./app
   default-language:    Haskell2010
 
@@ -70,11 +70,11 @@ test-suite topical-specs
   build-depends:         base
                        , topical
                        , QuickCheck
-                       , smallcheck
+                       , attoparsec
                        , hspec
+                       , smallcheck
                        , text
                        , text-icu
-                       , attoparsec
                        , unordered-containers
                        -- , tasty
                        -- , tasty-quickcheck
