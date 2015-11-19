@@ -31,11 +31,10 @@ module Topical.Text.Tokenizer.TextTiling
     ) where
 
 
-import           Control.Applicative
 import           Control.Arrow
 import           Control.Error
 import           Control.Lens
-import           Data.Foldable       hiding (concat)
+-- import           Data.Foldable       hiding (concat)
 import           Data.Hashable
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet        as S
@@ -45,19 +44,19 @@ import           Data.Monoid
 import           Data.Ord
 import qualified Data.Text           as T
 import           Data.Traversable
-import qualified Data.Vector         as V
-import           Statistics.Sample
+-- import qualified Data.Vector         as V
+-- import           Statistics.Sample
 
-import           Topical.Text.Types
+-- import           Topical.Text.Types
 
 
 type Frequency         = Int
-type TokenSeqFrequency = (SeqNumber, Frequency)
+-- type TokenSeqFrequency = (SeqNumber, Frequency)
 
 -- | "The morpholocially-analyzed token is stored in a table along with
 -- a record of the token-windowSeq number it occurred in, and the number of
 -- times it appeared in the token-sequence."
-type TokenTable a      = M.HashMap a [TokenSeqFrequency]
+-- type TokenTable a      = M.HashMap a [TokenSeqFrequency]
 
 type SeqNumber = Int
 
@@ -137,27 +136,32 @@ cutOffs = undefined
 
 -- The first Double is the raw score. The second is the depth score
 -- actually used to make the boundary determination.
-type SeqNode a = SeqScore a (Double, Double)
+-- type SeqNode a = SeqScore a (Double, Double)
 
 -- | This takes a list of @SeqScore a (Double, Double)@, sorted by
 -- likelihood of beginning a new section, and returns a tree of descending
 -- likelihoods, but in sequence order.
-hangTree :: Show a => [SeqNode a] -> Tree (SeqNode a)
-hangTree = unfoldTree hang
-    where
-        hang :: Show a => [SeqNode a] -> (SeqNode a, (Maybe [SeqNode a], Maybe [SeqNode a]))
-        hang = undefined
-             . maximumBy (comparing (snd . snd . fst))
-             . snd
-             . L.mapAccumL packageNode []
-             . filter (not . L.null)
-             . L.tails
-
-        packageNode :: Show a => [SeqNode a] -> [SeqNode a] -> ([SeqNode a], (SeqNode a, [[SeqNode a]]))
-        packageNode ls (s:rs) = (s:ls, (s, [reverse ls, rs]))
-        packageNode ls []     = (ls,   (undefined, []))
-        -- It should never reach here, so I'll just plant a bomb.
-        -- KA-BOOM!
+-- hangTree :: Show a => [SeqNode a] -> Tree (SeqNode a)
+-- hangTree = unfoldTree hang
+--     where
+--         hang :: Show a
+--                 => [SeqNode a]
+--                     -> (SeqNode a, (Maybe [SeqNode a], Maybe [SeqNode a]))
+--         hang = undefined
+--              . maximumBy (comparing (snd . snd . fst))
+--              . snd
+--              . L.mapAccumL packageNode []
+--              . filter (not . L.null)
+--              . L.tails
+--
+--         packageNode :: Show a
+--                        => [SeqNode a]
+--                            -> [SeqNode a]
+--                            -> ([SeqNode a], (SeqNode a, [[SeqNode a]]))
+--         packageNode ls (s:rs) = (s:ls, (s, [reverse ls, rs]))
+--         packageNode ls []     = (ls,   (undefined, []))
+--         -- It should never reach here, so I'll just plant a bomb.
+--         -- KA-BOOM!
 
 smooth :: Int -> Int -> [SeqScore a (Double, Double)]
        -> [SeqScore a (Double, Double)]
@@ -190,12 +194,18 @@ suppressSmallBlocks :: Int
                     -> [SeqScore a (Double, Double)]
 suppressSmallBlocks minP = sortNo . removeTiny minP . sortScore
     where
-        removeTiny :: Int -> [SeqScore a0 (Double, Double)] -> [SeqScore a0 (Double, Double)]
+        removeTiny :: Int
+                   -> [SeqScore a0 (Double, Double)]
+                   -> [SeqScore a0 (Double, Double)]
         removeTiny _ []     = []
-        removeTiny w (x:xs) = x : sortScore (map (modifyClose w $ x ^. _1 . seqNo) xs)
+        removeTiny w (x:xs) =
+            x : sortScore (map (modifyClose w $ x ^. _1 . seqNo) xs)
         closeTo :: Int -> Int -> SeqScore a1 (Double, Double) -> Bool
         closeTo w seq1No seq2 = abs (seq1No - (seq2 ^. _1 . seqNo)) <= w
-        modifyClose :: Int -> Int -> SeqScore a2 (Double, Double) -> SeqScore a2 (Double, Double)
+        modifyClose :: Int
+                    -> Int
+                    -> SeqScore a2 (Double, Double)
+                    -> SeqScore a2 (Double, Double)
         modifyClose w seq1No seq2 = if closeTo w seq1No seq2
                                         then seq2 & _2 . _2 .~ 0
                                         else seq2
@@ -208,7 +218,9 @@ sortNo = L.sortBy (comparing (_seqNo . fst))
 
 type BoundaryId a = (Double, Double, [Double -> SeqScore a (Double, Double)])
 
-boundary :: BoundaryId a -> SeqScore a Double -> (BoundaryId a, [SeqScore a (Double, Double)])
+boundary :: BoundaryId a
+         -> SeqScore a Double
+         -> (BoundaryId a, [SeqScore a (Double, Double)])
 boundary (leftS, lastS, pending) (ts, s)
     | lastS <= s = ((leftS', s, nextf:pending), [])
     | otherwise  = ((s, s, []), reverse (map ($ lastS) (nextf:pending)))
@@ -221,22 +233,22 @@ toPair :: [a] -> Maybe (a, a)
 toPair [a, b] = Just (a, b)
 toPair _      = Nothing
 
-toTriples :: [a] -> Maybe (a, a, a)
-toTriples [a, b, c] = Just (a, b, c)
-toTriples _         = Nothing
+-- toTriples :: [a] -> Maybe (a, a, a)
+-- toTriples [a, b, c] = Just (a, b, c)
+-- toTriples _         = Nothing
 
 mapAccumConcat :: (a -> b -> (a, [c])) -> a -> [b] -> (a, [c])
 mapAccumConcat f s = fmap concat . mapAccumL f s
 
 -- TODO: I think this should be a comonad, but right now I just want to get
 -- it written.
-mapAccumContext :: (s -> [x] -> x -> [x] -> (s, [a])) -> s -> [x] -> (s, [a])
-mapAccumContext f s xs = go s [] xs
-    where
-        go s ls []     = (s, [])
-        go s ls (x:xs) = let (s',  as)  = f s ls x xs
-                             (s'', ass) = go s' (x:ls) xs
-                         in  (s'', as ++ ass)
+-- mapAccumContext :: (s -> [x] -> x -> [x] -> (s, [a])) -> s -> [x] -> (s, [a])
+-- mapAccumContext f state = go state []
+--     where
+--         go s _  []     = (s, [])
+--         go s ls (x:xs) = let (s',  as)  = f s ls x xs
+--                              (s'', ass) = go s' (x:ls) xs
+--                          in  (s'', as ++ ass)
 
 -- | The block comparison scoring function. This looks at words in common
 -- between two windows.
@@ -268,6 +280,7 @@ blockCompare (Sequence _ _ _ b1) (Sequence _ _ (ts:_) b2) =
                          ) . getFreqs
         final (Sum t, (Sum bl, Sum br)) =
             fromIntegral t / sqrt (fromIntegral $ bl * br)
+blockCompare _ _ = undefined
 
 -- | This returns the terms in a frequency table.
 terms :: (Hashable a, Eq a) => FrequencyTable a -> S.HashSet a
@@ -291,17 +304,17 @@ vocabularyIntroduction tsSize _ = snd
         accum s (ts, block) =
             let unseen = S.size $ block `S.difference` s
                 s'     = s `S.union` block
-            in  (s', (ts, (fromIntegral unseen) / blockSize))
+            in  (s', (ts, fromIntegral unseen / blockSize))
 
 -- | This extends @windows@ to create @Sequence@ instances.
 windowSeq :: (Eq b, Hashable b)
           => Int -> CountFunction a b -> [a] -> [Sequence a b]
-windowSeq k counter = toSeq (windows k) counter
+windowSeq k = toSeq (windows k)
 
 -- | This extends @partition@ to create @Sequence@ data.
 partitionSeq :: (Eq b, Hashable b)
              => Int -> CountFunction a b -> [a] -> [Sequence a b]
-partitionSeq k counter = toSeq (partition k) counter
+partitionSeq k = toSeq (partition k)
 
 toSeq :: (Eq b, Hashable b)
       => ([(Int, a)] -> [[(Int, a)]])
@@ -362,22 +375,24 @@ frequencies xs = M.fromListWith (+) . zip xs $ L.repeat 1
 mergeFrequencies :: CountFunction (Sequence a b) b
 mergeFrequencies = foldMap _seqFreqs
 
-cosSimilarity :: (Hashable a, Eq a)
-              => FrequencyTable a -> FrequencyTable a -> Double
-cosSimilarity b1 b2 =
-    finish . foldMap step $ terms b1 `S.union` terms b2
-    where step k = let w1 = M.lookupDefault 0 k b1
-                       w2 = M.lookupDefault 0 k b2
-                    in (Sum (w1 * w2), Sum (w1 * w1), Sum (w2 * w2))
-          finish (Sum a, Sum b, Sum c) =
-              fromIntegral a / sqrt (fromIntegral b * fromIntegral c)
+-- cosSimilarity :: (Hashable a, Eq a)
+--               => FrequencyTable a -> FrequencyTable a -> Double
+-- cosSimilarity b1 b2 =
+--     finish . foldMap step $ terms b1 `S.union` terms b2
+--     where step k = let w1 = M.lookupDefault 0 k b1
+--                        w2 = M.lookupDefault 0 k b2
+--                     in (Sum (w1 * w2), Sum (w1 * w1), Sum (w2 * w2))
+--           finish (Sum a, Sum b, Sum c) =
+--               fromIntegral a / sqrt (fromIntegral b * fromIntegral c)
 
 -- | This calculates all boundaries as being places where the depth score
 -- is greater than the function below (mean minus half the standard
 -- deviation).
 --
--- If I need better performance, I can use http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-boundaries :: [Double]     -- ^ The cutoff scores between each paragraph block.
-           -> [Int]        -- ^ A list of the paragraph indexes that are boundaries.
-boundaries depths = undefined $ mean depths' - (fastStdDev depths' / 2.0)
-    where depths' = V.fromList depths
+-- If I need better performance, I can use
+-- http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
+
+-- boundaries :: [Double] -- ^ The cutoff scores between each paragraph block.
+--            -> [Int]    -- ^ A list of the paragraph indexes that are boundaries.
+-- boundaries depths = undefined $ mean depths' - (fastStdDev depths' / 2.0)
+--     where depths' = V.fromList depths

@@ -15,17 +15,16 @@ module Topical.Text.Tokenizer
 
 import           Control.Applicative
 import           Data.Attoparsec.Text
-import qualified Data.Attoparsec.Text as A
-import           Data.Char            (isSpace)
-import           Data.Foldable        (fold)
-import qualified Data.List            as L
-import           Data.Monoid
-import qualified Data.Text            as T
+import qualified Data.Attoparsec.Text              as A
+import           Data.Char                         (isSpace)
+import           Data.Foldable                     (fold)
+import qualified Data.List                         as L
+import qualified Data.Text                         as T
 import           Data.Text.ICU
 
 import           Topical.Text.Regex
-import           Topical.Text.Types
 import           Topical.Text.Tokenizer.TextTiling
+import           Topical.Text.Types
 
 
 splitTokenizer :: Tokenizer

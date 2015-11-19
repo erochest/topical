@@ -17,10 +17,9 @@ module Topical.Text.Types
     ) where
 
 
-import           Control.Applicative
 import           Control.Lens
 
-import qualified Data.Text           as T
+import qualified Data.Text    as T
 
 
 type Tokenizer = T.Text -> [T.Text]

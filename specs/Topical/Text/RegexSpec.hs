@@ -4,11 +4,7 @@
 module Topical.Text.RegexSpec where
 
 
-import           Data.Maybe
 import           Data.Monoid
-import qualified Data.Text          as T
-import           Data.Text.ICU
-import qualified Data.Text.ICU      as ICU
 
 import           Test.Hspec
 

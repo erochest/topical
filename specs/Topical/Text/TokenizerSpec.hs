@@ -4,7 +4,6 @@
 module Topical.Text.TokenizerSpec where
 
 
-import           Control.Applicative
 import           Data.Attoparsec.Text
 import qualified Data.Attoparsec.Text   as A
 import           Data.Char
