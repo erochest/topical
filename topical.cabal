@@ -56,7 +56,7 @@ executable topical
                      , lens
                      , Chart
                      , Chart-cairo
-  -- hs-source-dirs:      
+  hs-source-dirs:      ./app
   default-language:    Haskell2010
 
 test-suite topical-specs
@@ -64,6 +64,9 @@ test-suite topical-specs
   ghc-options:         -threaded -rtsopts
   hs-source-dirs:      specs
   main-is:             Specs.hs
+  other-modules:         Topical.Text.RegexSpec
+                       , Topical.Text.TextTilingSpec
+                       , Topical.Text.TokenizerSpec
   build-depends:         base
                        , topical
                        , QuickCheck
