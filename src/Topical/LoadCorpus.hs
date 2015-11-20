@@ -1,4 +1,4 @@
-module Topical.Actions.LoadCorpus where
+module Topical.LoadCorpus where
 
 
 import           Control.Error

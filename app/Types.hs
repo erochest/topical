@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings  #-}
 
 
-module Topical.Types where
+module Types where
 
 
 import           Data.Data

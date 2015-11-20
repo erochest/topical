@@ -3,9 +3,8 @@ module Main where
 
 import           Control.Error
 
+import           Actions
 import           Opts
-
-import           Topical.Actions
 
 
 -- training:

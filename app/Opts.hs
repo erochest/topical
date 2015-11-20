@@ -6,7 +6,7 @@ module Opts
 import           Control.Error
 import           Options.Applicative
 
-import           Topical.Types
+import           Types
 
 
 parseActions :: Script Actions

@@ -1,13 +1,14 @@
 {-# LANGUAGE RecordWildCards #-}
 
 
-module Topical.Actions where
+module Actions where
 
 
 import           Control.Error
 
-import           Topical.Actions.LoadCorpus
-import           Topical.Types
+import           Types
+
+import           Topical.LoadCorpus
 
 
 doActions :: Actions -> Script ()

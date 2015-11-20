@@ -16,13 +16,11 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Topical.Actions
-                     , Topical.Actions.LoadCorpus
+  exposed-modules:     Topical.LoadCorpus
                      , Topical.Text.Tokenizer
                      , Topical.Text.Tokenizer.TextTiling
                      , Topical.Text.Types
                      , Topical.Text.Regex
-                     , Topical.Types
   build-depends:       base >=4.7 && <5
                      , attoparsec
                      , bifunctors
@@ -49,7 +47,9 @@ library
 
 executable topical
   main-is:             Topical.hs
-  other-modules:       Opts
+  other-modules:       Actions
+                     , Opts
+                     , Types
   -- other-extensions:    
   build-depends:       base >=4.7 && <5
                      , topical
