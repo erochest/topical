@@ -46,11 +46,11 @@ instance Applicative Tree where
 
 nlr :: Tree a -> [a]
 nlr EmptyTree = []
-nlr (Node n l r) = n : (nlr l) ++ (nlr r)
+nlr (Node n l r) = n : nlr l ++ nlr r
 
 lnr :: Tree a -> [a]
 lnr EmptyTree = []
-lnr (Node n l r) = (nlr l) ++ n : (nlr r)
+lnr (Node n l r) = nlr l ++ n : nlr r
 
 unfoldTree :: (a -> (b, (Maybe a, Maybe a))) -> a -> Tree b
 unfoldTree f a = Node n l' r'
