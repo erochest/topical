@@ -3,6 +3,7 @@
 
 module Topical.Text.Types
     ( Tokenizer
+    , PlainTokenizer
 
     , Tree(..)
     , _EmptyTree
@@ -19,10 +20,8 @@ module Topical.Text.Types
 
 import           Control.Lens
 
-import qualified Data.Text    as T
+import           Taygeta.Types (PlainTokenizer, Tokenizer)
 
-
-type Tokenizer = T.Text -> [T.Text]
 
 data Tree a = EmptyTree
             | Node { _nodeData  :: a

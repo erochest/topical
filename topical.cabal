@@ -36,6 +36,7 @@ library
                      , statistics
                      , statistics
                      , taygeta
+                     , taygeta-icu
                      , text
                      , text-icu
                      , unordered-containers

@@ -27,22 +27,22 @@ import           Topical.Text.Tokenizer.TextTiling
 import           Topical.Text.Types
 
 
-splitTokenizer :: Tokenizer
+splitTokenizer :: PlainTokenizer
 splitTokenizer = T.split isSpace
 
-parserTokenizer :: Parser T.Text -> Tokenizer
+parserTokenizer :: Parser T.Text -> PlainTokenizer
 parserTokenizer p = parseTokens (many (alt p anyChar) <* takeText)
 
-sexprTokenizer :: Tokenizer
+sexprTokenizer :: PlainTokenizer
 sexprTokenizer = parseTokens sexpr
 
-charTokenizer :: Tokenizer
+charTokenizer :: PlainTokenizer
 charTokenizer = map T.singleton . T.unpack
 
-lineTokenizer :: Tokenizer
+lineTokenizer :: PlainTokenizer
 lineTokenizer = T.lines
 
-treebankTokenizer :: Tokenizer
+treebankTokenizer :: PlainTokenizer
 treebankTokenizer = T.words
                   . foldRepl' (stage2 ++ contractions)
                   . flip (j ' ') ' '
@@ -86,7 +86,7 @@ treebankTokenizer = T.words
                                              -- , "\\b(wha)(t)(cha)\\b"
                                              ]
 
-parseTokens :: Parser [T.Text] -> Tokenizer
+parseTokens :: Parser [T.Text] -> PlainTokenizer
 parseTokens p = fold . parseOnly (p <* endOfInput)
 
 alt :: Parser a -> Parser b -> Parser a
