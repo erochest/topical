@@ -1,7 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-
 module Main where
+
+
+import           Control.Error
+
+import           Opts
+
+import           Topical.Actions
 
 
 -- training:
@@ -67,4 +71,4 @@ module Main where
 -- 5. sort and print
 
 main :: IO ()
-main = undefined
+main = runScript $ doActions =<< parseActions
