@@ -39,6 +39,7 @@ library
                      , taygeta-icu
                      , text
                      , text-icu
+                     , text-regex-replace
                      , unordered-containers
                      , vector
                      , vector
