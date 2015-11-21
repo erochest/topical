@@ -10,6 +10,7 @@ import           Data.Data
 import           GHC.Generics
 
 
+-- TODO: Specify tokenizer regex
 data Actions
     = LoadCorpus { loadInput        :: !FilePath
                  , loadStopWordFile :: !(Maybe FilePath)
