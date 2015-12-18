@@ -17,10 +17,13 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Topical.LoadCorpus
+                     , Topical.Text.Regex
                      , Topical.Text.Tokenizer
                      , Topical.Text.Tokenizer.TextTiling
                      , Topical.Text.Types
-                     , Topical.Text.Regex
+                     , Topical.VSpace
+                     , Topical.VSpace.IO
+                     , Topical.VSpace.Types
   build-depends:       base >=4.7 && <5
                      , attoparsec
                      , bifunctors
@@ -36,14 +39,12 @@ library
                      , repa
                      , split
                      , statistics
-                     , statistics
                      , taygeta
                      , taygeta-icu
                      , text
                      , text-icu
                      , text-regex-replace
                      , unordered-containers
-                     , vector
                      , vector
                      , vector-algorithms
   hs-source-dirs:      ./src
