@@ -17,9 +17,9 @@ import           Taygeta.Types
 
 
 loadCorpus :: FilePath -> Maybe FilePath -> FilePath -> Script ()
-loadCorpus input stopWords _output = do
-  stopWords <- maybe (return S.empty) loadStopWords stopWords
-  docs <-  mapM (fmap (filter (not . (`S.member` stopWords))) . tokenizeFile)
+loadCorpus input stopWordFile _output = do
+  stopWords <- maybe (return S.empty) loadStopWords stopWordFile
+  _docs <-  mapM (fmap (filter (not . (`S.member` stopWords))) . tokenizeFile)
        =<< walkDirectory input
   -- open the output file
     -- Walk over docs
@@ -35,6 +35,12 @@ loadStopWords = fmap S.fromList . tokenizeFile
 
 tokenize :: PlainTokenizer
 tokenize = fmap T.toLower . regexTokenizer "[\\p{L}\\p{N}_]+"
+
+tokenizeStop :: S.HashSet PlainToken -> PlainTokenizer
+tokenizeStop stop = filter (`S.member` stop) . tokenize
+
+tokenizeStopFile :: S.HashSet PlainToken -> FilePath -> Script [PlainToken]
+tokenizeStopFile stop = fmap (filter (`S.member` stop)) . tokenizeFile
 
 walkDirectory :: FilePath -> Script [FilePath]
 walkDirectory = walk <=< scriptIO . makeAbsolute

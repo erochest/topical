@@ -27,7 +27,7 @@ spec = describe "Topical.Text.Tokenizer" $ do
             splitTokenizer "The red pony! It rides the Moors!" `shouldBe`
                 ["The", "red", "pony!", "It", "rides", "the", "Moors!"]
 
-    describe "parserTokenizer" $ do
+    describe "parserTokenizer" $
         it "should return all matches of a given parser." $ do
             let space' = T.singleton <$> space
                 rWords = T.cons <$> (space *> char 'r') <*> A.takeWhile (not . isSpace)
@@ -57,8 +57,7 @@ spec = describe "Topical.Text.Tokenizer" $ do
 
     describe "charTokenizer" $
         it "should break a string into characters." $
-            charTokenizer "abcdefgh ijklm" `shouldBe`
-                ["a", "b", "c", "d", "e", "f", "g", "h", " ", "i", "j", "k", "l", "m"]
+            charTokenizer "abcdefgh ijklm" `shouldBe` "abcdefgh ijklm"
 
     describe "lineTokenize" $
         it "should break a string into lines." $
@@ -91,9 +90,9 @@ spec = describe "Topical.Text.Tokenizer" $ do
                 ["They", "'ll", "save", "and", "invest", "more", "."]
 
     describe "textTilingTokenizer" $
-        it "should tokenize according to the TextTiling algorithm." $
+        it "should tokenize according to the TextTiling algorithm."
             pending
 
     describe "punktTokenizer" $
-        it "should tokenize according to a trained Punkt algorithm." $
+        it "should tokenize according to a trained Punkt algorithm."
             pending

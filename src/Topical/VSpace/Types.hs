@@ -1,13 +1,17 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor      #-}
 {-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DeriveTraversable  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
 
 module Topical.VSpace.Types
-    ( VSpace
-    , vsTokenMap
-    , vsIndexMap
-    , newVSpace
+    ( VSpaceModel
+    , vsmTokenMap
+    , vsmIndexMap
+    , newVSpaceModel
+    , VSpace(VS)
+    , vsVector
     ) where
 
 
@@ -18,15 +22,20 @@ import qualified Data.HashMap.Strict as M
 import           GHC.Generics
 
 
-data VSpace s t
-    = VS
-    { _vsTokenMap :: M.HashMap t Int
-    , _vsIndexMap :: M.HashMap Int t
+data VSpaceModel s t
+    = VSM
+    { _vsmTokenMap :: M.HashMap t Int
+    , _vsmIndexMap :: M.HashMap Int t
     } deriving (Show, Eq, Data, Typeable, Generic)
+$(makeLenses ''VSpaceModel)
+
+instance Foldable (VSpaceModel s) where
+    foldr f s = foldr f s . M.keys . _vsmTokenMap
+
+newVSpaceModel :: VSpaceModel s t
+newVSpaceModel = VSM M.empty M.empty
+
+data VSpace s v t
+    = VS { _vsVector :: v t }
+    deriving (Show, Eq, Data, Typeable, Generic, Functor, Traversable, Foldable)
 $(makeLenses ''VSpace)
-
-instance Foldable (VSpace s) where
-    foldr f s = foldr f s . M.keys . _vsTokenMap
-
-newVSpace :: VSpace s t
-newVSpace = VS M.empty M.empty
